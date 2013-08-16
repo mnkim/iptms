@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="loginDao">
+	<resultMap type="com.naonworks.iptms.mnkim.login.model.LoginVO" id="loginVO">
+		<result property="userId"          column="D_USERID"/>
+		<result property="passwd"        column="D_PASSWD"/>
+		<result property="userLevel"        column="D_USERLEVEL"/>
+	</resultMap>
+  
+	<select id="selectUser" parameterType="java.util.Map" resultMap="loginVO">
+    	SELECT 
+   			D_USERID
+   			, D_PASSWD
+   			, D_USERLEVEL
+   		FROM
+   			stem.R_USERINFO
+   		WHERE
+  	  		D_USERID = #{userId}
+  	  		AND D_PASSWD = #{passwd} 
+    </select>
+</mapper>

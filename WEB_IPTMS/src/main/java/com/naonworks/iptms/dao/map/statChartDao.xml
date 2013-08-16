@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+
+<mapper namespace="statDao">
+	<resultMap type="com.naonworks.iptms.vo.SbcIdleDBBean" id="resultMapSbcIdleDBBean">
+		<result property="sbcId"          column="D_SBC_ID"/>
+		<result property="boardId"        column="D_BOARD_ID"/>
+		<result property="regDateTime"    column="D_REG_DATETIME"/>
+		<result property="subscriberCnt"  column="SUB_CNT"/>
+		<result property="sessionCnt"     column="SESSION_CNT"/>
+		<result property="invCnt"         column="INV_CNT"/>
+		<result property="regCnt"         column="REG_CNT"/>
+		<result property="cpuPer"         column="CPU_PER"/>
+		<result property="memPer"         column="MEM_PER"/>
+		<result property="diskPer"        column="DISK_PER"/>
+		<result property="trafficRxCnt"   column="RX_CNT"/>
+		<result property="trafficTxCnt"   column="TX_CNT"/>
+	</resultMap>
+	
+    <select id="getInitChartData" resultMap="resultMapSbcIdleDBBean">
+		 SELECT  	IT.D_SBC_ID, IT.D_BOARD_ID, 
+		 			DATE_FORMAT(IT.D_REG_DATETIME,'%H:%i:%s') AS D_REG_DATETIME, 
+		 			SIP.SUB_CNT, SIP.SESSION_CNT, SIP.INV_CNT, SIP.REG_CNT, 
+		 			IT.CPU_PER, IT.MEM_PER, IT.DISK_PER, IT.RX_CNT, IT.TX_CNT 
+		 FROM  ( 
+		 		  ( 
+		 			SELECT  C.D_SBC_ID, C.D_REG_DATETIME, 
+		 					C.D_REG_TERM AS SUB_CNT, C.D_ICALL_ING AS SESSION_CNT, 
+		 					M.D_IINV AS INV_CNT, M.D_IREG AS REG_CNT 
+		 			FROM  ( 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_REAL_SIP_CALL_NEW 
+		 					WHERE   D_TYPE_ID = 3 
+		 					AND     D_KEY_ID = 0 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					AND     D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:5:0' DAY_SECOND)) AND NOW() 
+		 				   ) C, 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_REAL_SIP_MSG_NEW 
+		 					WHERE   D_TYPE_ID = 3 
+		 					AND     D_KEY_ID = 0 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					AND     D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:5:0' DAY_SECOND)) AND NOW() 
+		 				   ) M  
+		 				) 
+		 			WHERE  C.D_SBC_ID = M.D_SBC_ID 
+		 			AND    C.D_REG_DATETIME = M.D_REG_DATETIME 
+		 		  ) SIP 
+		 		  RIGHT OUTER JOIN 
+		 		  ( 
+		 			SELECT  I.D_SBC_ID, I.D_BOARD_ID, I.D_REG_DATETIME, 
+		 					I.CPU_PER, I.MEM_PER, I.DISK_PER, 
+		 					T.RX_CNT, T.TX_CNT 
+		 			FROM  ( 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_SBC_SYS_IDLE 
+		 					WHERE   D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:5:0' DAY_SECOND)) AND NOW() 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 				   ) I, 
+		 				   ( 
+		 					SELECT  D_SBC_ID, D_REG_DATETIME, 
+		 							SUM(D_RX_OCT_00+D_RX_OCT_02+D_RX_OCT_03+D_RX_OCT_04+D_RX_OCT_05+D_RX_OCT_06+D_RX_OCT_07+D_RX_OCT_08+D_RX_OCT_09+D_RX_OCT_10+D_RX_OCT_11+D_RX_OCT_12+D_RX_OCT_13+D_RX_OCT_14+D_RX_OCT_15) AS RX_CNT, 
+		 							SUM(D_TX_OCT_00+D_TX_OCT_02+D_TX_OCT_03+D_TX_OCT_04+D_TX_OCT_05+D_TX_OCT_06+D_TX_OCT_07+D_TX_OCT_08+D_TX_OCT_09+D_TX_OCT_10+D_TX_OCT_11+D_TX_OCT_12+D_TX_OCT_13+D_TX_OCT_14+D_TX_OCT_15) AS TX_CNT 
+		 					FROM    R_REAL_IF_TRAF_NEW 
+		 					WHERE   D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:5:0' DAY_SECOND)) AND NOW() 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					GROUP BY D_SBC_ID, D_REG_DATETIME 
+		 				   ) T 
+		 				  ) 
+		 			WHERE  I.D_SBC_ID = T.D_SBC_ID 
+		 			AND    I.D_REG_DATETIME = T.D_REG_DATETIME 
+		 		  ) IT 
+		 		  ON (SIP.D_SBC_ID = IT.D_SBC_ID AND SIP.D_REG_DATETIME = IT.D_REG_DATETIME) 
+		 		) 
+		 ORDER BY IT.D_REG_DATETIME ASC 
+	</select>
+	
+    <select id="getChartData" resultMap="resultMapSbcIdleDBBean">
+		 SELECT  	IT.D_SBC_ID, IT.D_BOARD_ID, 
+		 			DATE_FORMAT(IT.D_REG_DATETIME,'%H:%i:%s') AS D_REG_DATETIME, 
+		 			SIP.SUB_CNT, SIP.SESSION_CNT, SIP.INV_CNT, SIP.REG_CNT, 
+		 			IT.CPU_PER, IT.MEM_PER, IT.DISK_PER, IT.RX_CNT, IT.TX_CNT 
+		 FROM  ( 
+		 		  ( 
+		 			SELECT  C.D_SBC_ID, C.D_REG_DATETIME, 
+		 					C.D_REG_TERM AS SUB_CNT, C.D_ICALL_ING AS SESSION_CNT, 
+		 					M.D_IINV AS INV_CNT, M.D_IREG AS REG_CNT 
+		 			FROM  ( 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_REAL_SIP_CALL_NEW 
+		 					WHERE   D_TYPE_ID = 3 
+		 					AND     D_KEY_ID = 0 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					AND     D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:0:10' DAY_SECOND)) AND NOW() 
+		 				   ) C, 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_REAL_SIP_MSG_NEW 
+		 					WHERE   D_TYPE_ID = 3 
+		 					AND     D_KEY_ID = 0 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					AND     D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:0:10' DAY_SECOND)) AND NOW() 
+		 				   ) M  
+		 				) 
+		 			WHERE  C.D_SBC_ID = M.D_SBC_ID 
+		 			AND    C.D_REG_DATETIME = M.D_REG_DATETIME 
+		 		  ) SIP 
+		 		  RIGHT OUTER JOIN 
+		 		  ( 
+		 			SELECT  I.D_SBC_ID, I.D_BOARD_ID, I.D_REG_DATETIME, 
+		 					I.CPU_PER, I.MEM_PER, I.DISK_PER, 
+		 					T.RX_CNT, T.TX_CNT 
+		 			FROM  ( 
+		 				   ( 
+		 					SELECT  * 
+		 					FROM    R_SBC_SYS_IDLE 
+		 					WHERE   D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:0:10' DAY_SECOND)) AND NOW() 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 				   ) I, 
+		 				   ( 
+		 					SELECT  D_SBC_ID, D_REG_DATETIME, 
+		 							SUM(D_RX_OCT_00+D_RX_OCT_02+D_RX_OCT_03+D_RX_OCT_04+D_RX_OCT_05+D_RX_OCT_06+D_RX_OCT_07+D_RX_OCT_08+D_RX_OCT_09+D_RX_OCT_10+D_RX_OCT_11+D_RX_OCT_12+D_RX_OCT_13+D_RX_OCT_14+D_RX_OCT_15) AS RX_CNT, 
+		 							SUM(D_TX_OCT_00+D_TX_OCT_02+D_TX_OCT_03+D_TX_OCT_04+D_TX_OCT_05+D_TX_OCT_06+D_TX_OCT_07+D_TX_OCT_08+D_TX_OCT_09+D_TX_OCT_10+D_TX_OCT_11+D_TX_OCT_12+D_TX_OCT_13+D_TX_OCT_14+D_TX_OCT_15) AS TX_CNT 
+		 					FROM    R_REAL_IF_TRAF_NEW 
+		 					WHERE   D_REG_DATETIME BETWEEN (DATE_SUB(NOW(), INTERVAL '0:0:10' DAY_SECOND)) AND NOW() 
+		 					AND     RIGHT(D_REG_DATETIME,1) = 0 
+		 					GROUP BY D_SBC_ID, D_REG_DATETIME 
+		 					ORDER BY D_REG_DATETIME DESC 
+							LIMIT 1 
+		 				   ) T 
+		 				  ) 
+		 			WHERE  I.D_SBC_ID = T.D_SBC_ID 
+		 			AND    I.D_REG_DATETIME = T.D_REG_DATETIME 
+		 		  ) IT 
+		 		  ON (SIP.D_SBC_ID = IT.D_SBC_ID AND SIP.D_REG_DATETIME = IT.D_REG_DATETIME) 
+		 		) 
+		 ORDER BY IT.D_REG_DATETIME ASC 
+ 	</select>
+</mapper>

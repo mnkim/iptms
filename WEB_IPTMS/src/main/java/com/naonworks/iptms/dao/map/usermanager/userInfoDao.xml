@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="userInfoDao">
+	<resultMap type="com.naonworks.iptms.mnkim.config.userAndAccMngm.userMngm.model.UserInfoVO" id="userInfoVO">
+		<result property="userId"          column="D_USERID"/>
+		<result property="passwd"        column="D_PASSWD"/>
+		<result property="userLevel"        column="D_USERLEVEL"/>
+	</resultMap>
+    
+    <insert id="insertUserInfo" parameterType="java.util.Map"  >
+    	INSERT INTO 
+    		stem.R_USERINFO 
+    		(
+    			D_USERID
+    			, D_PASSWD
+    		) 
+    		values 
+    		(
+    			#{userId}
+    			, #{passwd}
+    		)
+    </insert>
+    
+    <select id="selectUserInfo" parameterType="java.util.Map" resultMap="userInfoVO" >
+    	SELECT 
+    		   A.*
+		  FROM (
+				SELECT @ROWNUM := @ROWNUM + 1 AS ROWNUM
+			        , D_USERID
+   					, D_PASSWD
+		    	  FROM 
+		    	  		stem.R_USERINFO
+		    
+		    	     , (SELECT @ROWNUM := 0) R 
+		    	 	  WHERE
+		    	 	  	1=1
+		    	 	  	<if test='userId != null and userId != ""'>
+		    	  		AND D_USERID LIKE '%${userId}%'    
+		    	  		</if>
+		    	 ORDER BY D_USERID desc
+		       ) A
+		<![CDATA[		       
+		 WHERE A.ROWNUM > #{begin}
+		   AND A.ROWNUM <= #{end}
+		]]>
+    </select>
+    
+    <delete id="deleteUserInfo"  parameterType="java.util.Map" >
+    	DELETE
+    		FROM 
+    			stem.R_USERINFO
+    		WHERE 
+    			D_USERID = #{userId}
+    </delete>
+    
+    <update id="updateUserInfo"  parameterType="java.util.Map" >
+    	UPDATE
+    		stem.R_USERINFO
+    	SET 
+    		D_PASSWD =  #{passwd}
+    		WHERE D_USERID = #{userId}
+    </update>
+    
+    <select id="selectUserInfoCnt" parameterType="java.util.Map" resultType="Integer">
+    	SELECT 
+   			COUNT(D_USERID) as CNT
+   		FROM
+   			stem.R_USERINFO
+   		WHERE
+   			1=1 
+   			<if test='userId != null and userId != ""'>
+  	  		AND D_USERID LIKE '%${userId}%'    
+  	  		</if>
+    </select>
+    
+</mapper>
